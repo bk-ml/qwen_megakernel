@@ -1,10 +1,13 @@
 """Benchmark: Qwen megakernel vs PyTorch HuggingFace baseline."""
 
 import gc
+import sys
 import time
 import warnings
 
 import torch
+
+from qwen_megakernel.perf_targets import TARGETS, check_min
 
 warnings.filterwarnings("ignore")
 
@@ -150,3 +153,6 @@ if __name__ == "__main__":
     print(f"{'Backend':<25} {'tok/s':>8} {'ms/tok':>8}")
     print("-" * 55)
     print(f"{'Megakernel':<25} {mk_tok:>8.1f} {mk_ms:>8.2f}")
+    print()
+    ok = check_min("Decode tok/s", mk_tok, TARGETS.decode_tok_s_min, unit="tok/s")
+    sys.exit(0 if ok else 1)
