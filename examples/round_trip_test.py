@@ -154,11 +154,21 @@ def tts_pcm(text: str):
 # MAIN PIPELINE
 # -----------------------------
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--input", type=Path)
+    p = argparse.ArgumentParser(
+        description="Round-trip voice test: STT → LLM → TTS → WAV",
+    )
+    p.add_argument(
+        "--input",
+        type=Path,
+        help="Input WAV for Whisper STT (omit to use --text and skip STT)",
+    )
     p.add_argument("--output", type=Path, default=Path("examples/mock/round_trip_out.wav"))
-    p.add_argument("--mock", action="store_true")
-    p.add_argument("--text", default="Hello, how are you?")
+    p.add_argument("--mock", action="store_true", help="Mock STT/LLM/TTS (no server)")
+    p.add_argument(
+        "--text",
+        default="Hello, how are you?",
+        help="User utterance when --input is omitted (or mock STT input)",
+    )
     args = p.parse_args()
 
     # ---------------- MOCK MODE ----------------
@@ -178,8 +188,12 @@ def main():
 
     # ---------------- REAL MODE ----------------
     else:
-        user = transcribe(*load_wav(args.input))
-        print(f"[STT] {user}")
+        if args.input is not None:
+            user = transcribe(*load_wav(args.input))
+            print(f"[STT] {user}")
+        else:
+            user = args.text
+            print(f"[STT skipped] using --text: {user!r}")
 
         reply, llm_ttft, tok_s = llm_stream(user)
         print(f"[LLM] {reply}")

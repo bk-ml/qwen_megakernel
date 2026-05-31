@@ -75,9 +75,19 @@ curl http://127.0.0.1:8000/health
 
 ## Pipecat client
 
+Run the **server on the GPU machine** and the **mic client on your laptop** (the GPU box usually has no microphone).
+
 ```bash
+# On GPU host
+python -m qwen_megakernel.server.app --port 8080
+
+# On laptop (SSH tunnel — 46210 is SSH, not HTTP)
+ssh -N -p 46210 root@<gpu-host> -L 8080:127.0.0.1:8080
+
+# On laptop
 uv pip install -r requirements-pipecat.txt
-export VOICE_SERVER_URL=http://<gpu-host>:8000
+export VOICE_SERVER_URL=http://127.0.0.1:8080
+curl http://127.0.0.1:8080/health
 python examples/pipecat_voice_agent.py
 ```
 

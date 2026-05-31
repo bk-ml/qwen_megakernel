@@ -40,6 +40,11 @@ from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.transports.local.audio import LocalAudioTransport, LocalAudioTransportParams
 
+try:
+    import pyaudio
+except ImportError:
+    pyaudio = None  # type: ignore[assignment]
+
 from integrations.pipecat.megakernel_llm import create_megakernel_llm_service
 from integrations.pipecat.qwen_tts import Qwen3TTSService
 from integrations.pipecat.voice_client import check_voice_server, voice_server_base
@@ -53,6 +58,33 @@ class TranscriptionLogger(FrameProcessor):
         if isinstance(frame, TranscriptionFrame) and frame.text.strip():
             logger.info(f"Heard: {frame.text.strip()!r}")
         await self.push_frame(frame, direction)
+
+
+def ensure_local_microphone() -> None:
+    """Fail fast on headless GPU boxes (no ALSA/PyAudio input device)."""
+    if os.getenv("PIPCAT_SKIP_AUDIO_CHECK"):
+        return
+    if pyaudio is None:
+        raise SystemExit(
+            "PyAudio is required for the mic client. Install with:\n"
+            "  pip install -r requirements-pipecat.txt\n"
+            "(needs pipecat-ai[local]; on macOS: brew install portaudio)"
+        )
+    pa = pyaudio.PyAudio()
+    try:
+        pa.get_default_input_device_info()
+    except OSError as exc:
+        raise SystemExit(
+            "No microphone on this machine.\n"
+            "Run the voice server on the GPU host, then run this script on your "
+            "laptop with an SSH tunnel:\n"
+            "  ssh -N -p 46210 root@HOST -L 8080:127.0.0.1:8080\n"
+            "  export VOICE_SERVER_URL=http://127.0.0.1:8080\n"
+            "  python examples/pipecat_voice_agent.py\n"
+            f"({exc})"
+        ) from exc
+    finally:
+        pa.terminate()
 
 
 async def ensure_voice_server() -> None:
@@ -73,8 +105,8 @@ async def ensure_voice_server() -> None:
 
 async def main() -> None:
     await ensure_voice_server()
+    ensure_local_microphone()
 
-    # handles audio input/output (mic and speakers)
     logger.info("Initializing local audio (mic + speakers)...")
     transport = LocalAudioTransport(
         LocalAudioTransportParams(
@@ -92,9 +124,14 @@ async def main() -> None:
         "(first run may download the model)..."
     )
     stt = WhisperSTTService(
-        model=whisper_model,
+        settings=WhisperSTTService.Settings(model=whisper_model),
         device=whisper_device,
     )
+    if getattr(stt, "_model", None) is None:
+        raise SystemExit(
+            "Whisper failed to load. Install STT deps:\n"
+            "  pip install 'pipecat-ai[whisper]'"
+        )
     logger.info("Whisper STT ready.")
 
     # llm to generate text tokens from text
