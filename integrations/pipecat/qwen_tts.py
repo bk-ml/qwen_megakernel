@@ -36,7 +36,8 @@ class Qwen3TTSService(TTSService):
         )
         super().__init__(
             sample_rate=sample_rate,
-            text_aggregation_mode=TextAggregationMode.TOKEN,
+            # Qwen3-TTS synthesizes full phrases; per-token calls are very slow.
+            text_aggregation_mode=TextAggregationMode.SENTENCE,
             push_start_frame=True,
             push_stop_frames=True,
             settings=settings,
@@ -44,9 +45,17 @@ class Qwen3TTSService(TTSService):
         )
         self._client = AsyncTtsWebSocketClient()
 
+    async def on_turn_context_created(self, context_id: str) -> None:
+        # Pre-connect while the LLM is still generating the first sentence.
+        try:
+            await self._client.connect()
+        except Exception as exc:
+            logger.warning(f"TTS WebSocket pre-connect failed: {exc}")
+
     def language_to_service_language(self, language: Language) -> str | None:
         return str(language.value) if language else self._settings.language
 
+    # Calls it automatically with: generated text, context_id
     async def run_tts(
         self, text: str, context_id: str
     ) -> AsyncGenerator[Frame | None, None]:

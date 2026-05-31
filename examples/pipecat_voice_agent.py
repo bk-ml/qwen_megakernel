@@ -28,6 +28,7 @@ load_dotenv(ROOT / ".env")
 
 from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.frames.frames import TranscriptionFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -35,18 +36,46 @@ from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
 )
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.transports.local.audio import LocalAudioTransport, LocalAudioTransportParams
 
 from integrations.pipecat.megakernel_llm import create_megakernel_llm_service
 from integrations.pipecat.qwen_tts import Qwen3TTSService
-from integrations.pipecat.voice_client import voice_server_base
+from integrations.pipecat.voice_client import check_voice_server, voice_server_base
+
+
+class TranscriptionLogger(FrameProcessor):
+    """Log STT output so it's clear the mic pipeline is working."""
+
+    async def process_frame(self, frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, TranscriptionFrame) and frame.text.strip():
+            logger.info(f"Heard: {frame.text.strip()!r}")
+        await self.push_frame(frame, direction)
+
+
+async def ensure_voice_server() -> None:
+    base = voice_server_base()
+    logger.info(f"Checking voice server at {base} ...")
+    try:
+        health = await check_voice_server()
+    except Exception as exc:
+        raise SystemExit(
+            f"Voice server not reachable at {base}: {exc}\n"
+            "Start it with: python -m qwen_megakernel.server.app"
+        ) from exc
+
+    if not health.get("tts"):
+        logger.warning("Server reports TTS unavailable — install qwen-tts on the GPU host")
+    logger.info(f"Voice server OK (llm={health.get('llm')}, tts={health.get('tts')})")
 
 
 async def main() -> None:
-    logger.info(f"Voice server: {voice_server_base()}")
+    await ensure_voice_server()
 
     # handles audio input/output (mic and speakers)
+    logger.info("Initializing local audio (mic + speakers)...")
     transport = LocalAudioTransport(
         LocalAudioTransportParams(
             audio_in_enabled=True,
@@ -56,10 +85,17 @@ async def main() -> None:
     )
 
     # converts audio → text.
-    stt = WhisperSTTService(
-        model=os.getenv("WHISPER_MODEL", "base"),
-        device=os.getenv("WHISPER_DEVICE", "cpu"),
+    whisper_model = os.getenv("WHISPER_MODEL", "base")
+    whisper_device = os.getenv("WHISPER_DEVICE", "cpu")
+    logger.info(
+        f"Loading Whisper STT model={whisper_model!r} device={whisper_device!r} "
+        "(first run may download the model)..."
     )
+    stt = WhisperSTTService(
+        model=whisper_model,
+        device=whisper_device,
+    )
+    logger.info("Whisper STT ready.")
 
     # llm to generate text tokens from text
     llm = create_megakernel_llm_service()
@@ -88,6 +124,7 @@ async def main() -> None:
         [
             transport.input(),
             stt,
+            TranscriptionLogger(),
             user_agg,
             llm,
             tts,
@@ -106,7 +143,10 @@ async def main() -> None:
         ),
     )
 
-    logger.info("Listening — speak into the microphone.")
+    logger.info(
+        "Ready — speak into the microphone. "
+        "Pause briefly after you finish; VAD detects end-of-speech."
+    )
     await PipelineRunner().run(task)
 
 

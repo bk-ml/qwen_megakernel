@@ -14,6 +14,8 @@ import asyncio
 import base64
 import json
 import os
+import queue
+import threading
 import time
 import uuid
 from functools import lru_cache
@@ -140,19 +142,30 @@ async def tts_websocket(websocket: WebSocket) -> None:
 
         context_id = req.context_id or uuid.uuid4().hex
         loop = asyncio.get_event_loop()
+        chunk_q: queue.Queue = queue.Queue()
+
+        def _produce_chunks() -> None:
+            try:
+                for pcm, sr in stream_pcm_chunks(
+                    req.text,
+                    speaker=req.speaker,
+                    language=req.language,
+                ):
+                    chunk_q.put((pcm, sr))
+            except Exception as exc:
+                chunk_q.put(exc)
+            finally:
+                chunk_q.put(None)
 
         try:
-            chunks = await loop.run_in_executor(
-                None,
-                lambda: list(
-                    stream_pcm_chunks(
-                        req.text,
-                        speaker=req.speaker,
-                        language=req.language,
-                    )
-                ),
-            )
-            for pcm, sr in chunks:
+            threading.Thread(target=_produce_chunks, daemon=True).start()
+            while True:
+                item = await loop.run_in_executor(None, chunk_q.get)
+                if item is None:
+                    break
+                if isinstance(item, Exception):
+                    raise item
+                pcm, sr = item
                 await websocket.send_json(
                     {
                         "type": "audio",
