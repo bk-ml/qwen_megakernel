@@ -204,9 +204,7 @@ async def main() -> None:
             ok = False
 
     print()
-    print("=" * 55)
-    print("OVERALL:", "PASS" if ok else "FAIL")
-    print("=" * 55)
+   
     raise SystemExit(0 if ok else 1)
 
 

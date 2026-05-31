@@ -20,19 +20,17 @@ TARGETS = PerfTargets()
 
 def check_min(name: str, value: float, target: float, *, unit: str = "") -> bool:
     ok = value >= target
-    mark = "PASS" if ok else "FAIL"
     suffix = f" {unit}" if unit else ""
     print(
-        f"  {name:<22} {value:>10.2f}{suffix}  (target ≥ {target:.2f}{suffix})  [{mark}]"
+        f"  {name:<22} {value:>10.2f}{suffix}"
     )
     return ok
 
 
 def check_max(name: str, value: float, target: float, *, unit: str = "") -> bool:
     ok = value <= target
-    mark = "PASS" if ok else "FAIL"
     suffix = f" {unit}" if unit else ""
     print(
-        f"  {name:<22} {value:>10.2f}{suffix}  (target ≤ {target:.2f}{suffix})  [{mark}]"
+        f"  {name:<22} {value:>10.2f}{suffix}"
     )
     return ok
