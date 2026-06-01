@@ -22,7 +22,7 @@ All recordings available here: [Google Drive](https://drive.google.com/drive/fol
 
 - **demo_user_voice.mov** — microphone input being correctly transcribed by Whisper STT, bot responded logs visible
 - **demo_agent_voice.mov** — agent voice output confirming TTS is generating real speech, not just text
-- `[output.wav](output.wav)` — raw audio recording of a complete voice session
+- [`output.wav`](output.wav) — raw audio recording of a complete voice session
 > **Note:** This recording limitation is unrelated to the pipeline implementation. 
 > The voice agent ran fully end-to-end as expected on the RTX 5090. The split 
 > recordings and output.wav together provide complete evidence of this.
@@ -37,10 +37,10 @@ Together they demonstrate the complete flow: speak → transcribe → LLM → TT
 ## Terminal Logs
 
 **GPU Server** — showing health checks, chat completions, and TTS WebSocket connections:
-Server Terminal
+![Server Terminal](docs/screenshots/server_terminal.png)
 
 **Pipecat Client** — showing full round trip: STT transcription → LLM response → TTS audio playback:
-Client Terminal
+![Client Terminal](docs/screenshots/client_terminal.png)
 
 Key evidence visible in client log:
 
@@ -260,8 +260,8 @@ python examples/round_trip_test.py --input samples/hello.wav --output reply.wav
 
 Screenshots of both perf test runs:
 
-Perf Run 1
-Perf Run 2
+![Perf Run 1](docs/screenshots/perf_run1.png)
+![Perf Run 2](docs/screenshots/perf_run2.png)
 
 ---
 
