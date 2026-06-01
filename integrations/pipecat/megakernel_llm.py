@@ -21,4 +21,5 @@ def create_megakernel_llm_service():
         api_key=os.getenv("MEGAKERNEL_API_KEY", "megakernel"),
         base_url=f"{base}/v1",
         model=os.getenv("MEGAKERNEL_MODEL_NAME", "qwen-megakernel"),
+        stream=True,
     )

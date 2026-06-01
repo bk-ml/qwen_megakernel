@@ -20,6 +20,7 @@ from integrations.pipecat.voice_client import AsyncTtsWebSocketClient
 @dataclass
 class Qwen3TTSSettings(TTSSettings):
     """Qwen3-TTS: ``voice`` is the CustomVoice speaker name (e.g. serena)."""
+    model: str | None = "qwen3-tts"
 
 
 class Qwen3TTSService(TTSService):
@@ -37,7 +38,11 @@ class Qwen3TTSService(TTSService):
     ):
         speaker = speaker or os.getenv("QWEN3_TTS_SPEAKER", "serena")
         language = language or os.getenv("QWEN3_TTS_LANGUAGE", "English")
-        settings = settings or Qwen3TTSSettings(voice=speaker, language=language)
+        settings = settings or Qwen3TTSSettings(
+            model="qwen3-tts",   # 👈 ADD THIS
+            voice=speaker,
+            language=language,
+        )
         super().__init__(
             sample_rate=sample_rate,
             # Qwen3-TTS synthesizes full phrases; per-token calls are very slow.
@@ -73,12 +78,14 @@ class Qwen3TTSService(TTSService):
         self, text: str, context_id: str
     ) -> AsyncGenerator[Frame | None, None]:
         logger.debug(f"Qwen3 TTS: {len(text)} chars")
+        print(f"🤖 Agent: {text}")
         async for msg in self._client.stream_audio(
             text,
             speaker=self._speaker(),
             language=self._language(),
             context_id=context_id,
         ):
+            # logger.debug(f"Qwen3 TTS message: {msg}")
             if msg.get("type") == "audio":
                 yield TTSAudioRawFrame(
                     audio=base64.b64decode(msg["pcm_base64"]),

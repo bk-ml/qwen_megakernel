@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-DEFAULT_TTS_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
+DEFAULT_TTS_MODEL = "/workspace/Qwen3-TTS/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
 DEFAULT_SAMPLE_RATE = 24000
 
 

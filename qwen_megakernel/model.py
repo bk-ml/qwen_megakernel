@@ -1,3 +1,8 @@
+import os
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["HF_HOME"] = "/workspace/Qwen3-0.6B"
+os.environ["HUGGINGFACE_HUB_CACHE"] = "/workspace/Qwen3-0.6B"
 """Weight loading and high-level decode API for Qwen3-0.6B."""
 
 import math
@@ -18,7 +23,7 @@ VOCAB_SIZE = 151936
 _decode = torch.ops.qwen_megakernel_C.decode
 
 
-def load_weights(model_name="Qwen/Qwen3-0.6B", verbose: bool = True):
+def load_weights(model_name="/workspace/Qwen3-0.6B/Qwen/Qwen3-0___6B", verbose: bool = True):
     """Load Qwen3-0.6B weights from HuggingFace into GPU tensors."""
     if not verbose:
         import os
@@ -45,9 +50,9 @@ def load_weights(model_name="Qwen/Qwen3-0.6B", verbose: bool = True):
     if verbose:
         print(f"Loading {model_name}...")
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=torch.bfloat16, device_map="cuda"
+        model_name, dtype=torch.bfloat16, device_map="cuda", local_files_only=True
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
     state = model.state_dict()
 
     # RoPE tables
@@ -115,7 +120,7 @@ class Decoder:
         self,
         weights=None,
         tokenizer=None,
-        model_name="Qwen/Qwen3-0.6B",
+        model_name="/workspace/Qwen3-0.6B/Qwen/Qwen3-0___6B",
         verbose: bool = True,
     ):
         if weights is None:

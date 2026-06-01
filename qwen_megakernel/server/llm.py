@@ -12,7 +12,7 @@ class MegakernelLLM:
     """Single-session megakernel decoder for streaming generation."""
 
     def __init__(self, model_name: str | None = None):
-        name = model_name or os.getenv("MEGAKERNEL_MODEL", "Qwen/Qwen3-0.6B")
+        name = model_name or "/workspace/Qwen3-0.6B/Qwen/Qwen3-0___6B"
         self._decoder = Decoder(model_name=name, verbose=True)
         self._eos_id = self._decoder.tokenizer.eos_token_id
 

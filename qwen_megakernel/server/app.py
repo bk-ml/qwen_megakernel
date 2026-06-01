@@ -102,8 +102,13 @@ def chat_completions(body: ChatRequest):
     messages = [m.model_dump() for m in body.messages]
 
     def event_stream():
+        input_text = str([m.get('content', '') for m in messages])
+        print(f"\n>>> INPUT: {input_text}")
+        full_response = []
         for piece in get_llm().stream_chat(messages, max_tokens=body.max_tokens):
+            full_response.append(piece)
             yield _sse_chat_chunk(piece)
+        print(f"<<< OUTPUT: {''.join(full_response)}\n")
         yield _sse_chat_chunk("", finish=True)
         yield "data: [DONE]\n\n"
 
