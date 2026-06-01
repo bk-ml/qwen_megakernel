@@ -18,7 +18,7 @@ interrupt itself), a single video capturing both input and output audio
 simultaneously was not possible.
 
 To fully showcase the working pipeline, the demo is split across multiple recordings:
-All recordings available here: [Google Drive](https://drive.google.com/drive/folders/1Ogh10OmAlvFJM2GhepOOLVbHFdNnRk33?usp=sharing)
+All recordings available here: [Google Drive](https://drive.google.com/drive/folders/1_O9ZP3c_FL4QlkMO39PrmMIFvE4EQ8Dt?usp=sharing)
 
 - **demo_user_voice.mov** — microphone input being correctly transcribed by Whisper STT, bot responded logs visible
 - **demo_agent_voice.mov** — agent voice output confirming TTS is generating real speech, not just text
