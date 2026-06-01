@@ -37,7 +37,7 @@ Together they demonstrate the complete flow: speak → transcribe → LLM → TT
 ## Terminal Logs
 
 **GPU Server** — showing health checks, chat completions, and TTS WebSocket connections:
-![Server Terminal](docs/screenshots/server_terminal.png)
+<img src="docs/screenshots/server_terminal.png" width="700"/>
 
 **Pipecat Client** — showing full round trip: STT transcription → LLM response → TTS audio playback:
 ![Client Terminal](docs/screenshots/client_terminal.png)
@@ -260,7 +260,8 @@ python examples/round_trip_test.py --input samples/hello.wav --output reply.wav
 
 Screenshots of both perf test runs:
 
-![Perf Run 1](docs/screenshots/perf_run1.png)
+<img src="docs/screenshots/perf_run1.png" width="700"/>
+
 ![Perf Run 2](docs/screenshots/perf_run2.png)
 
 ---
